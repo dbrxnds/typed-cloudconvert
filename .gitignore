@@ -1,0 +1,9 @@
+node_modules
+dist
+*.log
+.DS_Store
+
+scratchpad.ts
+
+# opensrc - source code for packages
+opensrc/

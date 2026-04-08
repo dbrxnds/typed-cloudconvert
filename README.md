@@ -22,8 +22,6 @@ import { CloudConvertClient, Job, Ref, Task } from "effect-cloudconvert";
 pnpm add effect-cloudconvert cloudconvert effect
 ```
 
-`effect` is currently used for the optional runtime client integration and service layer.
-
 ## Quick Start
 
 ```ts

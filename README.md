@@ -117,7 +117,7 @@ const invalidJob = Job.empty().pipe(
 The type-level error message is:
 
 ```ts
-"effect-cloudconvert: 'convert-missing' references 'missing-import' via 'input', but it does not exist";
+"'convert-missing' references 'missing-import' via 'input', but it does not exist";
 ```
 
 That is the core idea: tasks can only reference names or aliases that the plan knows about.
@@ -157,8 +157,6 @@ The service exposes two kinds of methods:
   - `createJobResult(plan)`
   - `getJobResult(plan, id)`
   - `waitJobResult(plan, id)`
-
-The plan-aware helpers are the spiritual successor to the older `Job.get(...)` / `Job.wait(...)` idea, but they now live on the Effect service where the actual API calls happen.
 
 ## Advanced
 

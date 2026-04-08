@@ -63,7 +63,8 @@ describe("effect-cloudconvert", () => {
       expect(inspectTask.payload.input).toBe("import-file");
     }).pipe(
       Effect.provideService(CloudConvertClient.CloudConvertClient, {
-        interpretJob: (plan, rawJob) => Effect.succeed(Job.interpret(plan, rawJob)),
+        interpretJob: (plan, rawJob) =>
+          Effect.succeed(Job.interpret(plan, rawJob)),
         createJob: () =>
           Effect.succeed<CloudConvertJob>({
             id: "job-1",
@@ -191,7 +192,7 @@ describe("effect-cloudconvert", () => {
 
   it("throws a tagged error for unresolved required refs", () => {
     expect(() =>
-      Ref.resolveInput(Ref.required("missing"), {
+      Ref.resolveInput(Ref.placeholder("missing"), {
         bindings: {},
       }),
     ).toThrowError("Unresolved required ref: missing");

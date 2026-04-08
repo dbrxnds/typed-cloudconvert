@@ -19,20 +19,24 @@ export interface OutputRef<Name extends string = string> extends Pipeable {
 /**
  * A placeholder reference that can be satisfied later by a task alias.
  */
-export interface RequiredRef<Name extends string = string> extends Pipeable {
+export interface PlaceholderRef<Name extends string = string> extends Pipeable {
   readonly [RefTypeId]: typeof RefTypeId;
-  readonly _tag: "RequiredRef";
+  readonly _tag: "PlaceholderRef";
   readonly name: Name;
 }
 
-export type Any = OutputRef | RequiredRef;
+export type Any = OutputRef | PlaceholderRef;
 
 export type InputToken = string | Any;
 
 export type InputValue = InputToken | ReadonlyArray<InputToken>;
 
 export type TokenOf<Value> =
-  Value extends OutputRef<infer Name> ? Name : Value extends RequiredRef<infer Name> ? Name : never;
+  Value extends OutputRef<infer Name>
+    ? Name
+    : Value extends PlaceholderRef<infer Name>
+      ? Name
+      : never;
 
 export type DependenciesOf<Value> = Value extends readonly (infer Item)[]
   ? DependenciesOf<Item>
@@ -69,10 +73,12 @@ export function output<const Name extends string>(
 /**
  * Creates a placeholder reference that can be satisfied later by a task alias.
  */
-export function required<const Name extends string>(name: Name): RequiredRef<Name> {
-  return makeRef<RequiredRef<Name>>({
+export function placeholder<const Name extends string>(
+  name: Name,
+): PlaceholderRef<Name> {
+  return makeRef<PlaceholderRef<Name>>({
     [RefTypeId]: RefTypeId,
-    _tag: "RequiredRef",
+    _tag: "PlaceholderRef",
     name,
   });
 }
@@ -88,7 +94,9 @@ export interface ResolveRefOptions {
 /**
  * Error raised when a required placeholder cannot be resolved to a concrete task name.
  */
-export class UnresolvedRequiredRefError extends Data.TaggedError("UnresolvedRequiredRefError")<{
+export class UnresolvedRequiredRefError extends Data.TaggedError(
+  "UnresolvedRequiredRefError",
+)<{
   readonly name: string;
 }> {
   override get message(): string {
@@ -99,7 +107,10 @@ export class UnresolvedRequiredRefError extends Data.TaggedError("UnresolvedRequ
 /**
  * Resolves typed job references into the concrete task names expected by CloudConvert.
  */
-export function resolveInput(value: InputValue, options: ResolveRefOptions): string | string[] {
+export function resolveInput(
+  value: InputValue,
+  options: ResolveRefOptions,
+): string | string[] {
   if (Array.isArray(value)) {
     return value.map((item) => resolveToken(item, options));
   }

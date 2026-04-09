@@ -154,7 +154,7 @@ describe("typed-cloudconvert", () => {
 
     const result = Job.interpret(job, raw);
 
-    expect(result.task("inspect-file").operation).toBe("metadata");
+    expect(result.tasksByName["inspect-file"].operation).toBe("metadata");
     expect(result.tasksByName["inspect-file"].payload.input).toBe(
       "import-file",
     );

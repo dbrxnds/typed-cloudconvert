@@ -108,7 +108,9 @@ export function output<const Name extends string>(
  * const source = Ref.placeholder("source");
  * ```
  */
-export function placeholder<const Name extends string>(name: Name): PlaceholderRef<Name> {
+export function placeholder<const Name extends string>(
+  name: Name,
+): PlaceholderRef<Name> {
   return {
     [RefTypeId]: RefTypeId,
     _tag: "PlaceholderRef",
@@ -142,10 +144,6 @@ export class UnresolvedRequiredRefError extends Error {
   constructor(readonly refName: string) {
     super(`Unresolved placeholder ref: ${refName}`);
   }
-
-  override get message(): string {
-    return `Unresolved placeholder ref: ${this.refName}`;
-  }
 }
 
 /**
@@ -169,7 +167,10 @@ export class UnresolvedRequiredRefError extends Error {
  * );
  * ```
  */
-export function resolveInput(value: InputValue, options: ResolveRefOptions): string | string[] {
+export function resolveInput(
+  value: InputValue,
+  options: ResolveRefOptions,
+): string | string[] {
   if (Array.isArray(value)) {
     return value.map((item) => resolveToken(item, options));
   }

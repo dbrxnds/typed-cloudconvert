@@ -9,8 +9,10 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   pack: {
+    format: ["esm", "cjs"],
     dts: {
       tsgo: true,
+      cjsReexport: true,
     },
     exports: true,
   },

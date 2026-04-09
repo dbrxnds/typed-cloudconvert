@@ -34,16 +34,14 @@ describe("cloudconvert-job-builder", () => {
     );
 
     expect(Job.build(job)).toEqual({
-      tasks: {
-        "import-file": {
-          operation: "import/url",
-          url: "https://example.com/input.pdf",
-        },
-        "convert-file": {
-          operation: "convert",
-          input: "import-file",
-          output_format: "png",
-        },
+      "import-file": {
+        operation: "import/url",
+        url: "https://example.com/input.pdf",
+      },
+      "convert-file": {
+        operation: "convert",
+        input: "import-file",
+        output_format: "png",
       },
     });
   });
@@ -71,16 +69,14 @@ describe("cloudconvert-job-builder", () => {
     );
 
     expect(Job.build(job)).toEqual({
-      tasks: {
-        "import-file": {
-          operation: "import/url",
-          url: "https://example.com/input.mov",
-        },
-        "convert-mp4": {
-          operation: "convert",
-          input: "import-file",
-          output_format: "mp4",
-        },
+      "import-file": {
+        operation: "import/url",
+        url: "https://example.com/input.mov",
+      },
+      "convert-mp4": {
+        operation: "convert",
+        input: "import-file",
+        output_format: "mp4",
       },
     });
   });

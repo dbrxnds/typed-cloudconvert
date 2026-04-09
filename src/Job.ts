@@ -71,12 +71,10 @@ export interface JobPlan<
 > extends Pipeable {
   readonly [JobTypeId]: {
     readonly _TypeId: typeof JobTypeId;
-    readonly _Tasks: Tasks;
-    readonly _Provided: Provided;
-    readonly _Required: Required;
-    readonly _TaskIndex: TaskIndex;
-    readonly _Bindings: Bindings;
-    readonly _Issues: Issues;
+    readonly _Provided?: Provided;
+    readonly _Required?: Required;
+    readonly _TaskIndex?: TaskIndex;
+    readonly _Issues?: Issues;
   };
   readonly tasks: Tasks;
   readonly bindings: Bindings;
@@ -84,19 +82,16 @@ export interface JobPlan<
 
 /**
  * Any typed CloudConvert job plan.
- *
  */
 export type Any = JobPlan<any, any, any, any, any, any>;
 
 /**
  * Extracts the ordered task tuple from a job plan.
- *
  */
 export type TasksOf<Job extends Any> = Job["tasks"];
 
 /**
  * Extracts the union of provided task names and aliases known by a job plan.
- *
  */
 export type ProvidedOf<Job extends Any> =
   Job extends JobPlan<any, infer Provided, any, any, any, any>
@@ -105,7 +100,6 @@ export type ProvidedOf<Job extends Any> =
 
 /**
  * Extracts the full dependency requirement records tracked by a job plan.
- *
  */
 export type RequirementDetailsOf<Job extends Any> =
   Job extends JobPlan<any, any, infer Required, any, any, any>
@@ -173,7 +167,6 @@ type BindingRequirement<
  *
  * type Missing = Job.RequiredOf<typeof fragment>;
  * ```
- *
  */
 export type RequiredOf<Job extends Any> = RequirementRef<
   RequirementDetailsOf<Job>
@@ -181,7 +174,6 @@ export type RequiredOf<Job extends Any> = RequirementRef<
 
 /**
  * Extracts the map from task names to task definitions for a job plan.
- *
  */
 export type TaskIndexOf<Job extends Any> =
   Job extends JobPlan<any, any, any, infer TaskIndex, any, any>
@@ -190,7 +182,6 @@ export type TaskIndexOf<Job extends Any> =
 
 /**
  * Extracts the alias bindings tracked by a job plan.
- *
  */
 export type BindingsOf<Job extends Any> =
   Job extends JobPlan<any, any, any, any, infer Bindings, any>
@@ -199,7 +190,6 @@ export type BindingsOf<Job extends Any> =
 
 /**
  * Extracts the tracked issue records for a job plan.
- *
  */
 export type IssuesOf<Job extends Any> =
   Job extends JobPlan<any, any, any, any, any, infer Issues> ? Issues : never;
@@ -308,7 +298,6 @@ type AddBindingResult<
 /**
  * Branded compile-time error produced when a job plan contains duplicate task
  * names or aliases.
- *
  */
 export type DuplicateTaskNameError<
   Job extends Any,
@@ -322,7 +311,6 @@ export type DuplicateTaskNameError<
 /**
  * Branded compile-time error produced when a job plan still has unresolved
  * dependencies.
- *
  */
 export type MissingDependencyError<
   Job extends Any,
@@ -358,7 +346,6 @@ export type CompleteJob<Job extends Any> = [
 
 /**
  * Extracts the branded error message from a compile-time job error.
- *
  */
 export type BrandedErrorOf<Value> = Value extends {
   readonly __effect_cloudconvert_error__: infer Error;
@@ -368,7 +355,6 @@ export type BrandedErrorOf<Value> = Value extends {
 
 /**
  * Extracts the branded hint message from a compile-time job error.
- *
  */
 export type BrandedHintOf<Value> = Value extends {
   readonly __effect_cloudconvert_hint__: infer Hint;
@@ -379,7 +365,6 @@ export type BrandedHintOf<Value> = Value extends {
 /**
  * Extracts the unresolved ref names from a compile-time missing dependency
  * error.
- *
  */
 export type BrandedMissingRefsOf<Value> = Value extends {
   readonly __effect_cloudconvert_missing_refs__: infer MissingRefs;
@@ -404,7 +389,6 @@ type TaskResultMap<Job extends Any> = {
 
 /**
  * Union of typed runtime task results for every task in a job plan.
- *
  */
 export type TaskResultUnion<Job extends Any> =
   TaskResultMap<Job>[keyof TaskResultMap<Job>];
@@ -420,6 +404,9 @@ export interface JobResult<Job extends Any>
   extends Omit<CloudConvertJob, "tasks">, Pipeable {
   readonly tasks: ReadonlyArray<TaskResultUnion<Job>>;
   readonly tasksByName: TaskResultMap<Job>;
+  task<Name extends keyof TaskResultMap<Job> & string>(
+    name: Name,
+  ): TaskResultMap<Job>[Name];
 }
 
 /**
@@ -436,7 +423,6 @@ type BuiltTasks<Job extends Any> = {
 
 /**
  * Serialized CloudConvert job payload produced from a complete job plan.
- *
  */
 export type BuiltJob<Job extends Any> = Omit<JobTemplate, "tasks"> & {
   readonly tasks: BuiltTasks<Job>;
@@ -445,7 +431,6 @@ export type BuiltJob<Job extends Any> = Omit<JobTemplate, "tasks"> & {
 /**
  * Tagged error raised when a fetched CloudConvert job response is missing a
  * task declared in the plan.
- *
  */
 export class MissingTaskInResponseError extends Error {
   readonly _tag = "MissingTaskInResponseError";
@@ -463,7 +448,6 @@ export class MissingTaskInResponseError extends Error {
 /**
  * Tagged error raised when a raw CloudConvert job cannot be interpreted using
  * the plan.
- *
  */
 export class JobInterpretationError extends Error {
   readonly _tag = "JobInterpretationError";
@@ -489,10 +473,50 @@ type Mutable<A> = {
   -readonly [K in keyof A]: A[K];
 };
 
+type RawTask = CloudConvertJob["tasks"][number];
+
 function taskBindings(task: Task.Any): Readonly<Record<string, string>> {
   return Object.fromEntries(task.provides.map((name) => [name, task.name]));
 }
 
+function appendTask<
+  Tasks extends readonly Task.Any[],
+  Definition extends Task.Any,
+>(tasks: Tasks, definition: Definition): readonly [...Tasks, Definition] {
+  return [...tasks, definition] as readonly [...Tasks, Definition];
+}
+
+function mergeBindingRecords<
+  Left extends Readonly<Record<string, string>>,
+  Right extends Readonly<Record<string, string>>,
+>(left: Left, right: Right): Left & Right {
+  return {
+    ...left,
+    ...right,
+  };
+}
+
+function bindingRecord<const Name extends string, const Value extends string>(
+  name: Name,
+  value: Value,
+): { readonly [Key in Name]: Value } {
+  return { [name]: value } as { readonly [Key in Name]: Value };
+}
+
+function mergeTaskList<Left extends Any, Right extends readonly Task.Any[]>(
+  left: Left,
+  right: Right,
+): MergeTasks<Left, Right> {
+  return right.reduce<Any>((job, task) => add(job, task), left) as MergeTasks<
+    Left,
+    Right
+  >;
+}
+
+function makeJob<Result extends Any>(
+  tasks: Result["tasks"],
+  bindings: Result["bindings"],
+): Result;
 function makeJob<
   Tasks extends readonly Task.Any[],
   Provided extends string,
@@ -503,26 +527,46 @@ function makeJob<
 >(
   tasks: Tasks,
   bindings: Bindings,
-): JobPlan<Tasks, Provided, Required, TaskIndex, Bindings, Issues> {
+): JobPlan<Tasks, Provided, Required, TaskIndex, Bindings, Issues>;
+function makeJob(
+  tasks: readonly Task.Any[],
+  bindings: Readonly<Record<string, string>>,
+): Any {
   return {
     [JobTypeId]: {
       _TypeId: JobTypeId,
-      _Tasks: tasks,
-      _Provided: undefined as never,
-      _Required: undefined as never,
-      _TaskIndex: undefined as never,
-      _Bindings: bindings,
-      _Issues: undefined as never,
     },
     tasks,
     bindings,
     pipe,
-  } as JobPlan<Tasks, Provided, Required, TaskIndex, Bindings, Issues>;
+  };
+}
+
+function buildTasks<Job extends Any>(job: Job): BuiltTasks<Job> {
+  const tasks: Record<string, Task.BuiltTask<Task.Any>> = Object.create(null);
+
+  for (const task of job.tasks) {
+    tasks[task.name] = Task.build(task, job.bindings);
+  }
+
+  return tasks as BuiltTasks<Job>;
+}
+
+function makeTaskResult<Definition extends Task.Any>(
+  definition: Definition,
+  task: RawTask,
+): Task.TaskResultOf<Definition> {
+  return {
+    ...task,
+    name: definition.name,
+    operation: definition.operation,
+    payload: task.payload as Definition["payload"],
+    result: task.result as Task.TaskResultOf<Definition>["result"],
+  };
 }
 
 /**
  * Returns `true` when the provided value is a typed CloudConvert job plan.
- *
  */
 export function isJob(value: unknown): value is Any {
   return typeof value === "object" && value !== null && JobTypeId in value;
@@ -537,7 +581,6 @@ export function isJob(value: unknown): value is Any {
  *
  * const plan = Job.empty();
  * ```
- *
  */
 export function empty(): JobPlan {
   return makeJob<readonly [], never, never, {}, {}, never>([], {});
@@ -563,7 +606,6 @@ export function empty(): JobPlan {
  *   }),
  * );
  * ```
- *
  */
 export function make<const Tasks extends readonly Task.Any[]>(
   ...tasks: Tasks
@@ -593,7 +635,6 @@ export function make<const Tasks extends readonly Task.Any[]>(
  *   ),
  * );
  * ```
- *
  */
 export const add: {
   <Definition extends Task.Any>(
@@ -609,15 +650,12 @@ export const add: {
     job: Job,
     definition: Definition,
   ): AddTaskResult<Job, Definition> =>
-    makeJob(
-      [...job.tasks, definition] as unknown as AddTaskResult<
+    makeJob<AddTaskResult<Job, Definition>>(
+      appendTask(job.tasks, definition) as AddTaskResult<
         Job,
         Definition
       >["tasks"],
-      {
-        ...job.bindings,
-        ...taskBindings(definition),
-      } as AddTaskResult<Job, Definition>["bindings"],
+      mergeBindingRecords(job.bindings, taskBindings(definition)),
     ),
 );
 
@@ -651,7 +689,6 @@ export const add: {
  *   Job.merge(fragment),
  * );
  * ```
- *
  */
 export const provide: {
   <const Name extends string, const Output extends Ref.OutputRef<string>>(
@@ -678,10 +715,10 @@ export const provide: {
     name: Name,
     output: Output,
   ): AddBindingResult<Job, Name, Output> =>
-    makeJob(job.tasks, {
-      ...job.bindings,
-      [name]: output.task,
-    } as AddBindingResult<Job, Name, Output>["bindings"]),
+    makeJob<AddBindingResult<Job, Name, Output>>(
+      job.tasks,
+      mergeBindingRecords(job.bindings, bindingRecord(name, output.task)),
+    ),
 );
 
 /**
@@ -715,7 +752,6 @@ export const provide: {
  *   Job.merge(fragment),
  * );
  * ```
- *
  */
 export const merge: {
   <Right extends Any>(
@@ -731,19 +767,12 @@ export const merge: {
     left: Left,
     right: Right,
   ): MergeResult<Left, Right> => {
-    const initial = makeJob(left.tasks, left.bindings);
-    const mergedTasks = right.tasks.reduce(
-      (job: Any, task: Task.Any) => add(job, task),
-      initial as Any,
-    );
+    const mergedTasks = mergeTaskList(left, right.tasks);
 
-    return makeJob(
-      mergedTasks.tasks as MergeResult<Left, Right>["tasks"],
-      {
-        ...mergedTasks.bindings,
-        ...right.bindings,
-      } as MergeResult<Left, Right>["bindings"],
-    ) as MergeResult<Left, Right>;
+    return makeJob<MergeResult<Left, Right>>(
+      mergedTasks.tasks,
+      mergeBindingRecords(mergedTasks.bindings, right.bindings),
+    );
   },
 );
 
@@ -774,20 +803,12 @@ export const merge: {
  *
  * const built = Job.build(plan);
  * ```
- *
  */
 export function build<Job extends Any>(
   job: CompleteInput<Job>,
 ): [Job] extends [CompleteJob<Job>] ? BuiltJob<Job> : never {
-  const tasks = Object.fromEntries(
-    job.tasks.map((task: Task.Any) => [
-      task.name,
-      Task.build(task, job.bindings),
-    ]),
-  ) as BuiltTasks<Job>;
-
   return {
-    tasks,
+    tasks: buildTasks(job),
   } as [Job] extends [CompleteJob<Job>] ? BuiltJob<Job> : never;
 }
 
@@ -811,7 +832,6 @@ export function build<Job extends Any>(
  * // Later, after fetching a raw CloudConvert job response:
  * // const typed = Job.interpret(plan, rawJob)
  * ```
- *
  */
 export function interpret<Job extends Any>(
   plan: Job,
@@ -827,14 +847,11 @@ export function interpret<Job extends Any>(
         throw new MissingTaskInResponseError(definition.name);
       }
 
-      tasksByName[definition.name as keyof TaskResultMap<Job> & string] = {
-        ...task,
-        name: definition.name,
-        operation: definition.operation,
-        payload:
-          task.payload as TaskIndexOf<Job>[typeof definition.name]["payload"],
-        result: task.result as Task.TaskResultOf<typeof definition>["result"],
-      } as TaskResultMap<Job>[keyof TaskResultMap<Job> & string];
+      const name = definition.name as keyof TaskResultMap<Job> & string;
+      tasksByName[name] = makeTaskResult(
+        definition,
+        task,
+      ) as TaskResultMap<Job>[typeof name];
     }
 
     return {
@@ -846,6 +863,15 @@ export function interpret<Job extends Any>(
       }) as ReadonlyArray<TaskResultUnion<Job>>,
       tasksByName,
       pipe,
+      task(name) {
+        const task = tasksByName[name];
+
+        if (task === undefined) {
+          throw new MissingTaskInResponseError(name);
+        }
+
+        return task as TaskResultMap<Job>[typeof name];
+      },
     };
   } catch (cause) {
     if (

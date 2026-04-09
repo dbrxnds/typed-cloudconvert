@@ -77,13 +77,6 @@ const pipe = function <A>(this: A) {
   return pipeArguments(this, arguments) as A;
 };
 
-function makeRef<T extends Any>(ref: Omit<T, "pipe">): T {
-  return {
-    ...ref,
-    pipe,
-  } as T;
-}
-
 /**
  * Creates a typed reference to the output of a concrete task.
  *
@@ -97,11 +90,12 @@ function makeRef<T extends Any>(ref: Omit<T, "pipe">): T {
 export function output<const Name extends string>(
   task: Name | { readonly name: Name },
 ): OutputRef<Name> {
-  return makeRef<OutputRef<Name>>({
+  return {
     [RefTypeId]: RefTypeId,
     _tag: "OutputRef",
     task: typeof task === "string" ? task : task.name,
-  });
+    pipe,
+  };
 }
 
 /**
@@ -115,11 +109,12 @@ export function output<const Name extends string>(
  * ```
  */
 export function placeholder<const Name extends string>(name: Name): PlaceholderRef<Name> {
-  return makeRef<PlaceholderRef<Name>>({
+  return {
     [RefTypeId]: RefTypeId,
     _tag: "PlaceholderRef",
     name,
-  });
+    pipe,
+  };
 }
 
 /**

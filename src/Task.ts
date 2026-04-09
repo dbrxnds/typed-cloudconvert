@@ -115,7 +115,9 @@ export type TaskDependencies<Payload> = Payload extends {
  * Extracts the alias names a task contributes to a job via `provides`.
  */
 export type ProvidedAliasesOf<Task extends Any> =
-  Task[typeof TaskTypeId]["_Provides"];
+  Task extends TaskDefinition<any, any, any, any, infer Provides>
+    ? Provides
+    : never;
 
 /**
  * Immutable typed description of a CloudConvert task.
@@ -144,11 +146,7 @@ export interface TaskDefinition<
 > extends Pipeable {
   readonly [TaskTypeId]: {
     readonly _TypeId: typeof TaskTypeId;
-    readonly _Name: Name;
-    readonly _Operation: Op;
-    readonly _Payload: Payload;
-    readonly _Requires: Requires;
-    readonly _Provides: Provides;
+    readonly _Requires?: Requires;
   };
   readonly name: Name;
   readonly operation: Op;
@@ -257,11 +255,6 @@ function makeTask<
   return {
     [TaskTypeId]: {
       _TypeId: TaskTypeId,
-      _Name: name,
-      _Operation: operation,
-      _Payload: payload,
-      _Requires: undefined as never,
-      _Provides: undefined as never,
     },
     name,
     operation,
@@ -270,6 +263,44 @@ function makeTask<
     provides,
     pipe,
   };
+}
+
+function payloadFromConfig<
+  const Name extends string,
+  const Op extends OperationName,
+  const Payload extends TaskPayload<Op>,
+  const Provides extends string,
+>(config: MakeConfig<Name, Op, Payload, Provides>): Payload {
+  const {
+    name: _,
+    operation: __,
+    ignore_error: ___,
+    provides: ____,
+    ...payload
+  } = config;
+  return payload as unknown as Payload;
+}
+
+function payloadFromOperationConfig<
+  const Name extends string,
+  const Op extends OperationName,
+  const Payload extends TaskPayload<Op>,
+  const Provides extends string,
+>(
+  config: {
+    readonly name: Name;
+    readonly ignore_error?: boolean;
+    readonly provides?: ProvidesInput<Provides>;
+  } & Payload,
+): Payload {
+  const { name: _, ignore_error: __, provides: ___, ...payload } = config;
+  return payload as unknown as Payload;
+}
+
+function hasInput(
+  payload: object,
+): payload is { readonly input?: Ref.InputValue } | { input?: Ref.InputValue } {
+  return "input" in payload;
 }
 
 /**
@@ -301,28 +332,27 @@ export function isTask(value: unknown): value is Any {
  * });
  * ```
  */
-export function build(
-  task: Any,
+export function build<Task extends Any>(
+  task: Task,
   bindings: Readonly<Record<string, string>>,
-): BuiltTask<Any> {
-  const payload = task.payload as Record<string, unknown>;
+): BuiltTask<Task> {
+  const payload = task.payload;
 
-  const builtPayload =
-    "input" in payload
-      ? {
-          ...payload,
-          input:
-            payload.input === undefined
-              ? undefined
-              : Ref.resolveInput(payload.input as Ref.InputValue, { bindings }),
-        }
-      : payload;
+  const builtPayload = hasInput(payload)
+    ? {
+        ...payload,
+        input:
+          payload.input === undefined
+            ? undefined
+            : Ref.resolveInput(payload.input, { bindings }),
+      }
+    : payload;
 
   return {
     operation: task.operation,
     ...(task.ignoreError ? { ignore_error: true } : {}),
     ...builtPayload,
-  } as BuiltTask<Any>;
+  };
 }
 
 /**
@@ -366,13 +396,12 @@ export function make<
 >(
   config: MakeConfig<Name, Op, Payload, Provides>,
 ): TaskDefinition<Name, Op, Payload, TaskDependencies<Payload>, Provides> {
-  const { name, operation, ignore_error, provides, ...payload } = config;
   return makeTask(
-    name,
-    operation,
-    payload as unknown as Payload,
-    normalizeProvides(provides),
-    ignore_error ?? false,
+    config.name,
+    config.operation,
+    payloadFromConfig(config),
+    normalizeProvides(config.provides),
+    config.ignore_error ?? false,
   );
 }
 
@@ -388,13 +417,12 @@ function makeOperation<Op extends OperationName>(operation: Op) {
       readonly provides?: ProvidesInput<Provides>;
     } & Payload,
   ): TaskDefinition<Name, Op, Payload, TaskDependencies<Payload>, Provides> => {
-    const { name, ignore_error, provides, ...payload } = config;
     return makeTask(
-      name,
+      config.name,
       operation,
-      payload as unknown as Payload,
-      normalizeProvides(provides),
-      ignore_error ?? false,
+      payloadFromOperationConfig(config),
+      normalizeProvides(config.provides),
+      config.ignore_error ?? false,
     );
   };
 }
@@ -425,9 +453,11 @@ function normalizeProvides<Provides extends string>(
     return [];
   }
 
-  return (
-    Array.isArray(provides) ? provides : [provides]
-  ) as ReadonlyArray<Provides>;
+  if (Array.isArray(provides)) {
+    return provides;
+  }
+
+  return [provides as Provides];
 }
 
 /**

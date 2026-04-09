@@ -44,27 +44,25 @@ const job = Job.empty().pipe(
   ),
 );
 
-const built = Job.build(job);
+const tasks = Job.build(job);
 ```
 
 `built` is a plain CloudConvert job payload:
 
 ```ts
 {
-  tasks: {
-    "import-file": {
-      operation: "import/url",
-      url: "https://example.com/input.mov"
-    },
-    "convert-file": {
-      operation: "convert",
-      input: "import-file",
-      output_format: "mp4"
-    },
-    "export-file": {
-      operation: "export/url",
-      input: "convert-file"
-    }
+  "import-file": {
+    operation: "import/url",
+    url: "https://example.com/input.mov"
+  },
+  "convert-file": {
+    operation: "convert",
+    input: "import-file",
+    output_format: "mp4"
+  },
+  "export-file": {
+    operation: "export/url",
+    input: "convert-file"
   }
 }
 ```

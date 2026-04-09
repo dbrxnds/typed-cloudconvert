@@ -101,7 +101,7 @@ describe("typed-cloudconvert", () => {
       ),
     );
 
-    const built = Job.build(job);
+    const tasks = Job.build(job);
 
     const raw = makeRawJob([
       {
@@ -118,7 +118,7 @@ describe("typed-cloudconvert", () => {
         depends_on_tasks: {},
         engine: "cloudconvert",
         engine_version: "1",
-        payload: built.tasks["import-file"],
+        payload: tasks["import-file"],
         result: {
           files: [
             {
@@ -143,7 +143,7 @@ describe("typed-cloudconvert", () => {
         },
         engine: "cloudconvert",
         engine_version: "1",
-        payload: built.tasks["inspect-file"],
+        payload: tasks["inspect-file"],
         result: {
           metadata: {
             pages: 1,
@@ -155,12 +155,8 @@ describe("typed-cloudconvert", () => {
     const result = Job.interpret(job, raw);
 
     expect(result.tasksByName["inspect-file"].operation).toBe("metadata");
-    expect(result.tasksByName["inspect-file"].payload.input).toBe(
-      "import-file",
-    );
-    expect(result.tasksByName["import-file"].payload.url).toBe(
-      "https://example.com/input.pdf",
-    );
+    expect(result.tasksByName["inspect-file"].payload.input).toBe("import-file");
+    expect(result.tasksByName["import-file"].payload.url).toBe("https://example.com/input.pdf");
     expect(
       (
         result.tasksByName["inspect-file"].result as {

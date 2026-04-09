@@ -8,9 +8,9 @@ import type * as Ref from "./Ref.js";
 import * as Task from "./Task.js";
 
 /**
- * Unique symbol carried by typed job plans.
+ * Unique string identifier carried by typed job plans.
  */
-export const JobTypeId = Symbol.for("typed-cloudconvert/Job");
+export const JobTypeId = "~typed-cloudconvert/Job";
 
 interface DuplicateProvidedNameIssue<Name extends string = string> {
   readonly _tag: "DuplicateProvidedNameIssue";

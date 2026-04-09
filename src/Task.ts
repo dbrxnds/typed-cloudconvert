@@ -33,9 +33,9 @@ import { pipeArguments, type Pipeable } from "./internal/pipe.js";
 import * as Ref from "./Ref.js";
 
 /**
- * Unique symbol carried by typed task definitions.
+ * Unique string identifier carried by typed task definitions.
  */
-export const TaskTypeId = Symbol.for("typed-cloudconvert/Task");
+export const TaskTypeId = "~typed-cloudconvert/Task";
 
 /**
  * Supported CloudConvert task operation names.
@@ -92,9 +92,7 @@ type WithTaskInputs<Data> = Data extends { readonly input: unknown }
  * The `input` field is widened to accept typed refs such as `Ref.output(...)`
  * and `Ref.placeholder(...)`.
  */
-export type TaskPayload<Op extends OperationName> = WithTaskInputs<
-  OperationMap[Op]
->;
+export type TaskPayload<Op extends OperationName> = WithTaskInputs<OperationMap[Op]>;
 
 /**
  * Extracts the task or placeholder names referenced by a payload.
@@ -115,9 +113,7 @@ export type TaskDependencies<Payload> = Payload extends {
  * Extracts the alias names a task contributes to a job via `provides`.
  */
 export type ProvidedAliasesOf<Task extends Any> =
-  Task extends TaskDefinition<any, any, any, any, infer Provides>
-    ? Provides
-    : never;
+  Task extends TaskDefinition<any, any, any, any, infer Provides> ? Provides : never;
 
 /**
  * Immutable typed description of a CloudConvert task.
@@ -197,11 +193,10 @@ export type TaskResultOf<Task extends Any> = TypedTaskResult<
  * Runtime task result with explicitly supplied name, operation, and payload
  * types.
  */
-export type TypedTaskResult<
-  Name extends string,
-  Op extends OperationName,
-  Payload,
-> = Omit<JobTask, "name" | "operation" | "payload" | "result"> & {
+export type TypedTaskResult<Name extends string, Op extends OperationName, Payload> = Omit<
+  JobTask,
+  "name" | "operation" | "payload" | "result"
+> & {
   readonly name: Name;
   readonly operation: Op;
   readonly payload: Payload;
@@ -226,9 +221,7 @@ type BuiltPayload<Payload> = Payload extends { readonly input: infer Input }
       }
     : Payload extends { readonly input?: infer Input }
       ? Omit<Payload, "input"> & {
-          readonly input?: Input extends Ref.InputValue
-            ? string | string[]
-            : Input;
+          readonly input?: Input extends Ref.InputValue ? string | string[] : Input;
         }
       : Payload extends { input?: infer Input }
         ? Omit<Payload, "input"> & {
@@ -271,13 +264,7 @@ function payloadFromConfig<
   const Payload extends TaskPayload<Op>,
   const Provides extends string,
 >(config: MakeConfig<Name, Op, Payload, Provides>): Payload {
-  const {
-    name: _,
-    operation: __,
-    ignore_error: ___,
-    provides: ____,
-    ...payload
-  } = config;
+  const { name: _, operation: __, ignore_error: ___, provides: ____, ...payload } = config;
   return payload as unknown as Payload;
 }
 
@@ -342,9 +329,7 @@ export function build<Task extends Any>(
     ? {
         ...payload,
         input:
-          payload.input === undefined
-            ? undefined
-            : Ref.resolveInput(payload.input, { bindings }),
+          payload.input === undefined ? undefined : Ref.resolveInput(payload.input, { bindings }),
       }
     : payload;
 
@@ -473,32 +458,27 @@ function normalizeProvides<Provides extends string>(
  * });
  * ```
  */
-export const importUrl: TaskConstructor<"import/url"> =
-  makeOperation("import/url");
+export const importUrl: TaskConstructor<"import/url"> = makeOperation("import/url");
 
 /**
  * Creates an `import/upload` task.
  */
-export const importUpload: TaskConstructor<"import/upload"> =
-  makeOperation("import/upload");
+export const importUpload: TaskConstructor<"import/upload"> = makeOperation("import/upload");
 
 /**
  * Creates an `import/base64` task.
  */
-export const importBase64: TaskConstructor<"import/base64"> =
-  makeOperation("import/base64");
+export const importBase64: TaskConstructor<"import/base64"> = makeOperation("import/base64");
 
 /**
  * Creates an `import/raw` task.
  */
-export const importRaw: TaskConstructor<"import/raw"> =
-  makeOperation("import/raw");
+export const importRaw: TaskConstructor<"import/raw"> = makeOperation("import/raw");
 
 /**
  * Creates an `import/s3` task.
  */
-export const importS3: TaskConstructor<"import/s3"> =
-  makeOperation("import/s3");
+export const importS3: TaskConstructor<"import/s3"> = makeOperation("import/s3");
 
 /**
  * Creates an `import/azure/blob` task.
@@ -521,8 +501,7 @@ export const importOpenStack: TaskConstructor<"import/openstack"> =
 /**
  * Creates an `import/sftp` task.
  */
-export const importSftp: TaskConstructor<"import/sftp"> =
-  makeOperation("import/sftp");
+export const importSftp: TaskConstructor<"import/sftp"> = makeOperation("import/sftp");
 
 /**
  * Creates a `convert` task.
@@ -548,20 +527,17 @@ export const optimize: TaskConstructor<"optimize"> = makeOperation("optimize");
 /**
  * Creates a `watermark` task.
  */
-export const watermark: TaskConstructor<"watermark"> =
-  makeOperation("watermark");
+export const watermark: TaskConstructor<"watermark"> = makeOperation("watermark");
 
 /**
  * Creates a `capture-website` task.
  */
-export const captureWebsite: TaskConstructor<"capture-website"> =
-  makeOperation("capture-website");
+export const captureWebsite: TaskConstructor<"capture-website"> = makeOperation("capture-website");
 
 /**
  * Creates a `thumbnail` task.
  */
-export const thumbnail: TaskConstructor<"thumbnail"> =
-  makeOperation("thumbnail");
+export const thumbnail: TaskConstructor<"thumbnail"> = makeOperation("thumbnail");
 
 /**
  * Creates a `metadata` task.
@@ -571,8 +547,7 @@ export const metadata: TaskConstructor<"metadata"> = makeOperation("metadata");
 /**
  * Creates a `metadata/write` task.
  */
-export const metadataWrite: TaskConstructor<"metadata/write"> =
-  makeOperation("metadata/write");
+export const metadataWrite: TaskConstructor<"metadata/write"> = makeOperation("metadata/write");
 
 /**
  * Creates a `merge` task.
@@ -602,14 +577,12 @@ export const command: TaskConstructor<"command"> = makeOperation("command");
  * });
  * ```
  */
-export const exportUrl: TaskConstructor<"export/url"> =
-  makeOperation("export/url");
+export const exportUrl: TaskConstructor<"export/url"> = makeOperation("export/url");
 
 /**
  * Creates an `export/s3` task.
  */
-export const exportS3: TaskConstructor<"export/s3"> =
-  makeOperation("export/s3");
+export const exportS3: TaskConstructor<"export/s3"> = makeOperation("export/s3");
 
 /**
  * Creates an `export/azure/blob` task.
@@ -632,5 +605,4 @@ export const exportOpenStack: TaskConstructor<"export/openstack"> =
 /**
  * Creates an `export/sftp` task.
  */
-export const exportSftp: TaskConstructor<"export/sftp"> =
-  makeOperation("export/sftp");
+export const exportSftp: TaskConstructor<"export/sftp"> = makeOperation("export/sftp");

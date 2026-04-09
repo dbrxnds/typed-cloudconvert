@@ -1,6 +1,6 @@
 {
   "name": "cloudconvert-job-builder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CloudConvert Job Builder with compile-time dependency checks.",
   "homepage": "https://github.com/dbrxnds/cloudconvert-job-builder#readme",
   "bugs": {
@@ -36,7 +36,7 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
-    "release": "bumpp -x \"pnpm publish\"",
+    "release": "bumpp && pnpm publish",
     "prepublishOnly": "vp pack",
     "prepare": "vp config"
   },

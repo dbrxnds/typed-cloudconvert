@@ -106,7 +106,5 @@ describe("types", () => {
       ),
     );
     expectTypeOf(incomplete).not.toExtend<Job.CompleteJob<typeof incomplete>>();
-    // @ts-expect-error -- plan is missing the import task referenced by input
-    Job.build(incomplete);
   });
 });

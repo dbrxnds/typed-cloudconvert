@@ -2,7 +2,7 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   test: {
-    include: ["tests/**/*.test.ts"],
+    include: ["src/tests/**/*.test.ts"],
     exclude: ["opensrc/**"],
   },
   staged: {
